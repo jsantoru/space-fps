@@ -504,12 +504,23 @@ const BabylonScene = () => {
       // Cast ray and check for hits
       const hit = scene.pickWithRay(ray);
 
-      if (hit && hit.pickedPoint) {
-        // Create laser beam visual
-        const laserPoints = [
-          camera.position.clone(),
-          hit.pickedPoint.clone()
-        ];
+      // Get barrel tip position for laser origin
+      const barrelTipPos = barrel.getAbsolutePosition().add(
+        camera.getDirection(Vector3.Forward()).scale(0.1)
+      );
+
+      // Determine laser end point (hit point or max distance)
+      const laserEndPoint = hit?.pickedPoint
+        ? hit.pickedPoint.clone()
+        : barrelTipPos.add(camera.getDirection(Vector3.Forward()).scale(100));
+
+      // Create laser beam visual from barrel tip
+      const laserPoints = [
+        barrelTipPos,
+        laserEndPoint
+      ];
+
+      if (true) { // Always create laser visual
 
         const laser = MeshBuilder.CreateLines(
           'laser',
@@ -633,15 +644,49 @@ const BabylonScene = () => {
     boxMaterial.emissiveColor = new Color3(0.1, 0.1, 0.2);
     box.material = boxMaterial;
 
-    // Add some walls/barriers
-    const wall1 = MeshBuilder.CreateBox('wall1', { width: 20, height: 4, depth: 1 }, scene);
-    wall1.position = new Vector3(0, 2, 15);
-    wall1.checkCollisions = true;
-
+    // Create walls around the arena to make an enclosed room
     const wallMaterial = new StandardMaterial('wallMat', scene);
     wallMaterial.diffuseColor = new Color3(0.3, 0.3, 0.35);
     wallMaterial.specularColor = new Color3(0.6, 0.6, 0.6);
-    wall1.material = wallMaterial;
+
+    // North wall
+    const wallNorth = MeshBuilder.CreateBox('wallNorth', { width: 50, height: 8, depth: 1 }, scene);
+    wallNorth.position = new Vector3(0, 4, 25);
+    wallNorth.checkCollisions = true;
+    wallNorth.material = wallMaterial;
+
+    // South wall
+    const wallSouth = MeshBuilder.CreateBox('wallSouth', { width: 50, height: 8, depth: 1 }, scene);
+    wallSouth.position = new Vector3(0, 4, -25);
+    wallSouth.checkCollisions = true;
+    wallSouth.material = wallMaterial;
+
+    // East wall
+    const wallEast = MeshBuilder.CreateBox('wallEast', { width: 1, height: 8, depth: 50 }, scene);
+    wallEast.position = new Vector3(25, 4, 0);
+    wallEast.checkCollisions = true;
+    wallEast.material = wallMaterial;
+
+    // West wall
+    const wallWest = MeshBuilder.CreateBox('wallWest', { width: 1, height: 8, depth: 50 }, scene);
+    wallWest.position = new Vector3(-25, 4, 0);
+    wallWest.checkCollisions = true;
+    wallWest.material = wallMaterial;
+
+    // Vaulted ceiling
+    const ceiling = MeshBuilder.CreateCylinder(
+      'ceiling',
+      { height: 50, diameter: 60, tessellation: 24, arc: 0.5 },
+      scene
+    );
+    ceiling.rotation.z = Math.PI / 2;
+    ceiling.position = new Vector3(0, 8, 0);
+    ceiling.checkCollisions = true;
+
+    const ceilingMaterial = new StandardMaterial('ceilingMat', scene);
+    ceilingMaterial.diffuseColor = new Color3(0.25, 0.25, 0.28);
+    ceilingMaterial.specularColor = new Color3(0.4, 0.4, 0.4);
+    ceiling.material = ceilingMaterial;
 
     // Add glowing pillars
     for (let i = 0; i < 4; i++) {
