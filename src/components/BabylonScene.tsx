@@ -12,7 +12,8 @@ import {
   Ray,
   Mesh,
   LinesMesh,
-  TransformNode
+  TransformNode,
+  PointLight
 } from '@babylonjs/core';
 
 const BabylonScene = () => {
@@ -26,8 +27,9 @@ const BabylonScene = () => {
     const engine = new Engine(canvasRef.current, true);
     const scene = new Scene(engine);
 
-    // Set space-themed background
-    scene.clearColor = new Color4(0.01, 0.01, 0.05, 1);
+    // Set darker background for better light contrast
+    scene.clearColor = new Color4(0.02, 0.02, 0.04, 1);
+    scene.ambientColor = new Color3(0.3, 0.3, 0.35);
 
     // Create FPS camera
     const camera = new UniversalCamera(
@@ -596,13 +598,15 @@ const BabylonScene = () => {
       }
     };
 
-    // Add basic lighting
+    // Add basic lighting - cool blue-white for Death Star feel
     const light = new HemisphericLight(
       'light',
       new Vector3(0, 1, 0),
       scene
     );
-    light.intensity = 0.7;
+    light.intensity = 1.8; // Brighter overall ambient light
+    light.diffuse = new Color3(0.9, 0.95, 1); // Cool blue-white tint
+    light.specular = new Color3(0.8, 0.8, 0.8);
 
     // Create space skybox with stars
     const skybox = MeshBuilder.CreateBox('skyBox', { size: 1000 }, scene);
@@ -628,10 +632,12 @@ const BabylonScene = () => {
     ground.position.y = 0;
     ground.checkCollisions = true;
 
-    // Basic metallic material for space station look
+    // Dark reflective floor like Death Star
     const groundMaterial = new StandardMaterial('groundMat', scene);
-    groundMaterial.diffuseColor = new Color3(0.2, 0.2, 0.25);
-    groundMaterial.specularColor = new Color3(0.5, 0.5, 0.5);
+    groundMaterial.diffuseColor = new Color3(0.1, 0.1, 0.12);
+    groundMaterial.specularColor = new Color3(1, 1, 1); // Full white specular
+    groundMaterial.specularPower = 128; // Very high for mirror-like reflections
+    groundMaterial.roughness = 0.1; // Smooth surface
     ground.material = groundMaterial;
 
     // Add a test box
@@ -644,10 +650,11 @@ const BabylonScene = () => {
     boxMaterial.emissiveColor = new Color3(0.1, 0.1, 0.2);
     box.material = boxMaterial;
 
-    // Create walls around the arena to make an enclosed room
+    // Create walls around the arena to make an enclosed room - Imperial style
     const wallMaterial = new StandardMaterial('wallMat', scene);
-    wallMaterial.diffuseColor = new Color3(0.3, 0.3, 0.35);
-    wallMaterial.specularColor = new Color3(0.6, 0.6, 0.6);
+    wallMaterial.diffuseColor = new Color3(0.85, 0.88, 0.92); // Brighter light gray
+    wallMaterial.specularColor = new Color3(0.8, 0.8, 0.8);
+    wallMaterial.specularPower = 48;
 
     // North wall
     const wallNorth = MeshBuilder.CreateBox('wallNorth', { width: 50, height: 8, depth: 1 }, scene);
@@ -673,20 +680,124 @@ const BabylonScene = () => {
     wallWest.checkCollisions = true;
     wallWest.material = wallMaterial;
 
-    // Vaulted ceiling
-    const ceiling = MeshBuilder.CreateCylinder(
+    // Add vertical light strips - 4 per wall, floor to ceiling
+    const lightStripMat = new StandardMaterial('lightStripMat', scene);
+    lightStripMat.emissiveColor = new Color3(0.7, 0.75, 0.8); // Soft white-blue glow
+    lightStripMat.diffuseColor = new Color3(1, 1, 1);
+    lightStripMat.disableLighting = true;
+
+    // North wall light strips (4 strips)
+    for (let i = 0; i < 4; i++) {
+      const strip = MeshBuilder.CreateBox(
+        `northStrip${i}`,
+        { width: 1.5, height: 8, depth: 0.1 },
+        scene
+      );
+      strip.position = new Vector3(-18 + i * 12, 4, 24.4);
+      strip.material = lightStripMat;
+
+      // Add point light for each strip - positioned right at the strip
+      const light = new PointLight(`northStripLight${i}`, new Vector3(-18 + i * 12, 4, 24), scene);
+      light.intensity = 15;
+      light.range = 30;
+      light.diffuse = new Color3(0.9, 0.95, 1);
+    }
+
+    // South wall light strips (4 strips)
+    for (let i = 0; i < 4; i++) {
+      const strip = MeshBuilder.CreateBox(
+        `southStrip${i}`,
+        { width: 1.5, height: 8, depth: 0.1 },
+        scene
+      );
+      strip.position = new Vector3(-18 + i * 12, 4, -24.4);
+      strip.material = lightStripMat;
+
+      const light = new PointLight(`southStripLight${i}`, new Vector3(-18 + i * 12, 4, -24), scene);
+      light.intensity = 15;
+      light.range = 30;
+      light.diffuse = new Color3(0.9, 0.95, 1);
+    }
+
+    // East wall light strips (4 strips)
+    for (let i = 0; i < 4; i++) {
+      const strip = MeshBuilder.CreateBox(
+        `eastStrip${i}`,
+        { width: 0.1, height: 8, depth: 1.5 },
+        scene
+      );
+      strip.position = new Vector3(24.4, 4, -18 + i * 12);
+      strip.material = lightStripMat;
+
+      const light = new PointLight(`eastStripLight${i}`, new Vector3(24, 4, -18 + i * 12), scene);
+      light.intensity = 15;
+      light.range = 30;
+      light.diffuse = new Color3(0.9, 0.95, 1);
+    }
+
+    // West wall light strips (4 strips)
+    for (let i = 0; i < 4; i++) {
+      const strip = MeshBuilder.CreateBox(
+        `westStrip${i}`,
+        { width: 0.1, height: 8, depth: 1.5 },
+        scene
+      );
+      strip.position = new Vector3(-24.4, 4, -18 + i * 12);
+      strip.material = lightStripMat;
+
+      const light = new PointLight(`westStripLight${i}`, new Vector3(-24, 4, -18 + i * 12), scene);
+      light.intensity = 15;
+      light.range = 30;
+      light.diffuse = new Color3(0.9, 0.95, 1);
+    }
+
+    // Flat ceiling - simple and clean
+    const ceiling = MeshBuilder.CreateBox(
       'ceiling',
-      { height: 50, diameter: 60, tessellation: 24, arc: 0.5 },
+      { width: 50, height: 0.5, depth: 50 },
       scene
     );
-    ceiling.rotation.z = Math.PI / 2;
     ceiling.position = new Vector3(0, 8, 0);
     ceiling.checkCollisions = true;
 
     const ceilingMaterial = new StandardMaterial('ceilingMat', scene);
-    ceilingMaterial.diffuseColor = new Color3(0.25, 0.25, 0.28);
-    ceilingMaterial.specularColor = new Color3(0.4, 0.4, 0.4);
+    ceilingMaterial.diffuseColor = new Color3(0.35, 0.37, 0.4); // Darker gray-blue
+    ceilingMaterial.specularColor = new Color3(0.5, 0.5, 0.5);
     ceiling.material = ceilingMaterial;
+
+    // Add industrial ceiling beams
+    const beamMat = new StandardMaterial('beamMat', scene);
+    beamMat.diffuseColor = new Color3(0.25, 0.25, 0.28);
+    beamMat.specularColor = new Color3(0.3, 0.3, 0.3);
+
+    // Horizontal beams across the room
+    for (let i = 0; i < 5; i++) {
+      const beam = MeshBuilder.CreateBox(
+        `beam${i}`,
+        { width: 0.5, height: 0.5, depth: 50 },
+        scene
+      );
+      beam.position = new Vector3(-20 + i * 10, 7.5, 0);
+      beam.material = beamMat;
+    }
+
+    // Add windows showing space
+    const windowMat = new StandardMaterial('windowMat', scene);
+    windowMat.diffuseColor = new Color3(0.05, 0.05, 0.1);
+    windowMat.emissiveColor = new Color3(0.02, 0.02, 0.08);
+    windowMat.alpha = 0.3;
+
+    // Windows on East wall
+    for (let i = 0; i < 4; i++) {
+      const window = MeshBuilder.CreateBox(
+        `window${i}`,
+        { width: 0.05, height: 5, depth: 8 },
+        scene
+      );
+      window.position = new Vector3(24.95, 4, -15 + i * 10);
+      window.material = windowMat;
+    }
+
 
     // Add glowing pillars
     for (let i = 0; i < 4; i++) {
