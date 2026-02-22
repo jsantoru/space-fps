@@ -11,7 +11,8 @@ import {
   Color3,
   Ray,
   Mesh,
-  LinesMesh
+  LinesMesh,
+  TransformNode
 } from '@babylonjs/core';
 
 const BabylonScene = () => {
@@ -53,10 +54,444 @@ const BabylonScene = () => {
     camera.keysLeft = [65]; // A
     camera.keysRight = [68]; // D
 
+    // Create weapon (parented to camera) - Tactical Blaster Rifle
+    const weaponRoot = new TransformNode('weaponRoot', scene);
+    weaponRoot.parent = camera;
+    weaponRoot.position = new Vector3(0.3, -0.3, 0.7);
+    weaponRoot.rotation.y = Math.PI / 2; // Rotate 90 degrees to point forward
+
+    // Materials - High detail tactical look
+    const weaponBlack = new StandardMaterial('weaponBlack', scene);
+    weaponBlack.diffuseColor = new Color3(0.08, 0.08, 0.09);
+    weaponBlack.specularColor = new Color3(0.5, 0.5, 0.5);
+    weaponBlack.specularPower = 48;
+
+    const weaponMetal = new StandardMaterial('weaponMetal', scene);
+    weaponMetal.diffuseColor = new Color3(0.25, 0.25, 0.27);
+    weaponMetal.specularColor = new Color3(0.7, 0.7, 0.7);
+    weaponMetal.specularPower = 64;
+
+    const scopeMat = new StandardMaterial('scopeMat', scene);
+    scopeMat.diffuseColor = new Color3(0.15, 0.15, 0.17);
+    scopeMat.specularColor = new Color3(0.4, 0.4, 0.4);
+    scopeMat.specularPower = 32;
+
+    const scopeLens = new StandardMaterial('scopeLens', scene);
+    scopeLens.diffuseColor = new Color3(0.05, 0.05, 0.15);
+    scopeLens.emissiveColor = new Color3(0.1, 0.15, 0.4);
+    scopeLens.alpha = 0.8;
+
+    const glowBlue = new StandardMaterial('glowBlue', scene);
+    glowBlue.emissiveColor = new Color3(0.15, 0.4, 1);
+    glowBlue.diffuseColor = new Color3(0.1, 0.25, 0.6);
+
+    const gripMat = new StandardMaterial('gripMat', scene);
+    gripMat.diffuseColor = new Color3(0.22, 0.2, 0.18);
+
+    // Main barrel - long tactical barrel with details
+    const barrelMain = MeshBuilder.CreateCylinder(
+      'barrelMain',
+      { height: 0.8, diameter: 0.06, tessellation: 16 },
+      scene
+    );
+    barrelMain.rotation.z = Math.PI / 2;
+    barrelMain.position = new Vector3(0.4, 0.05, 0);
+    barrelMain.parent = weaponRoot;
+    barrelMain.material = weaponBlack;
+
+    // Barrel shroud with vents
+    const barrelShroud = MeshBuilder.CreateCylinder(
+      'barrelShroud',
+      { height: 0.65, diameter: 0.1, tessellation: 16 },
+      scene
+    );
+    barrelShroud.rotation.z = Math.PI / 2;
+    barrelShroud.position = new Vector3(0.25, 0.05, 0);
+    barrelShroud.parent = weaponRoot;
+    barrelShroud.material = weaponMetal;
+
+    // Barrel vents (cooling vents like Star Wars)
+    for (let i = 0; i < 8; i++) {
+      const vent = MeshBuilder.CreateBox(
+        `vent${i}`,
+        { width: 0.04, height: 0.015, depth: 0.11 },
+        scene
+      );
+      vent.position = new Vector3(0.15 + i * 0.08, 0.1, 0);
+      vent.parent = weaponRoot;
+      vent.material = weaponBlack;
+    }
+
+    // Muzzle brake with glow
+    const barrel = MeshBuilder.CreateCylinder(
+      'barrel',
+      { height: 0.08, diameter: 0.08, tessellation: 12 },
+      scene
+    );
+    barrel.rotation.z = Math.PI / 2;
+    barrel.position = new Vector3(0.82, 0.05, 0);
+    barrel.parent = weaponRoot;
+    barrel.material = weaponMetal;
+
+    // Glowing muzzle interior
+    const muzzleGlow = MeshBuilder.CreateCylinder(
+      'muzzleGlow',
+      { height: 0.05, diameter: 0.05, tessellation: 10 },
+      scene
+    );
+    muzzleGlow.rotation.z = Math.PI / 2;
+    muzzleGlow.position = new Vector3(0.85, 0.05, 0);
+    muzzleGlow.parent = weaponRoot;
+    muzzleGlow.material = glowBlue;
+
+    // Upper receiver
+    const upperReceiver = MeshBuilder.CreateBox(
+      'upperReceiver',
+      { width: 0.35, height: 0.08, depth: 0.12 },
+      scene
+    );
+    upperReceiver.position = new Vector3(-0.05, 0.08, 0);
+    upperReceiver.parent = weaponRoot;
+    upperReceiver.material = weaponBlack;
+
+    // Lower receiver
+    const lowerReceiver = MeshBuilder.CreateBox(
+      'lowerReceiver',
+      { width: 0.25, height: 0.12, depth: 0.11 },
+      scene
+    );
+    lowerReceiver.position = new Vector3(-0.1, 0, 0);
+    lowerReceiver.parent = weaponRoot;
+    lowerReceiver.material = weaponBlack;
+
+    // Top picatinny rail
+    const topRail = MeshBuilder.CreateBox(
+      'topRail',
+      { width: 0.4, height: 0.02, depth: 0.08 },
+      scene
+    );
+    topRail.position = new Vector3(0.05, 0.13, 0);
+    topRail.parent = weaponRoot;
+    topRail.material = weaponMetal;
+
+    // Rail notches
+    for (let i = 0; i < 12; i++) {
+      const notch = MeshBuilder.CreateBox(
+        `notch${i}`,
+        { width: 0.015, height: 0.025, depth: 0.06 },
+        scene
+      );
+      notch.position = new Vector3(-0.15 + i * 0.032, 0.145, 0);
+      notch.parent = weaponRoot;
+      notch.material = weaponBlack;
+    }
+
+    // Scope - main body
+    const scopeBody = MeshBuilder.CreateCylinder(
+      'scopeBody',
+      { height: 0.25, diameter: 0.08, tessellation: 16 },
+      scene
+    );
+    scopeBody.rotation.z = Math.PI / 2;
+    scopeBody.position = new Vector3(0.1, 0.22, 0);
+    scopeBody.parent = weaponRoot;
+    scopeBody.material = scopeMat;
+
+    // Scope front lens
+    const scopeFront = MeshBuilder.CreateCylinder(
+      'scopeFront',
+      { height: 0.03, diameter: 0.065, tessellation: 12 },
+      scene
+    );
+    scopeFront.rotation.z = Math.PI / 2;
+    scopeFront.position = new Vector3(0.24, 0.22, 0);
+    scopeFront.parent = weaponRoot;
+    scopeFront.material = scopeLens;
+
+    // Scope rear lens (glowing)
+    const scopeRear = MeshBuilder.CreateCylinder(
+      'scopeRear',
+      { height: 0.03, diameter: 0.065, tessellation: 12 },
+      scene
+    );
+    scopeRear.rotation.z = Math.PI / 2;
+    scopeRear.position = new Vector3(-0.04, 0.22, 0);
+    scopeRear.parent = weaponRoot;
+    scopeRear.material = scopeLens;
+
+    // Scope mount rings
+    const mount1 = MeshBuilder.CreateTorus(
+      'mount1',
+      { diameter: 0.09, thickness: 0.015, tessellation: 16 },
+      scene
+    );
+    mount1.rotation.y = Math.PI / 2;
+    mount1.position = new Vector3(0.15, 0.22, 0);
+    mount1.parent = weaponRoot;
+    mount1.material = weaponMetal;
+
+    const mount2 = MeshBuilder.CreateTorus(
+      'mount2',
+      { diameter: 0.09, thickness: 0.015, tessellation: 16 },
+      scene
+    );
+    mount2.rotation.y = Math.PI / 2;
+    mount2.position = new Vector3(0.0, 0.22, 0);
+    mount2.parent = weaponRoot;
+    mount2.material = weaponMetal;
+
+    // Magazine
+    const magazine = MeshBuilder.CreateBox(
+      'magazine',
+      { width: 0.08, height: 0.25, depth: 0.08 },
+      scene
+    );
+    magazine.position = new Vector3(-0.08, -0.1, 0);
+    magazine.parent = weaponRoot;
+    magazine.material = weaponBlack;
+
+    // Magazine energy indicator
+    const magEnergy = MeshBuilder.CreateBox(
+      'magEnergy',
+      { width: 0.05, height: 0.15, depth: 0.02 },
+      scene
+    );
+    magEnergy.position = new Vector3(-0.08, -0.1, 0.042);
+    magEnergy.parent = weaponRoot;
+    magEnergy.material = glowBlue;
+
+    // Trigger guard
+    const triggerGuard = MeshBuilder.CreateTorus(
+      'triggerGuard',
+      { diameter: 0.13, thickness: 0.015, tessellation: 16 },
+      scene
+    );
+    triggerGuard.rotation.z = Math.PI / 2;
+    triggerGuard.position = new Vector3(-0.12, 0, 0);
+    triggerGuard.parent = weaponRoot;
+    triggerGuard.material = weaponMetal;
+
+    // Pistol grip
+    const grip = MeshBuilder.CreateBox(
+      'grip',
+      { width: 0.06, height: 0.28, depth: 0.08 },
+      scene
+    );
+    grip.position = new Vector3(-0.15, -0.08, 0);
+    grip.rotation.z = 0.15;
+    grip.parent = weaponRoot;
+    grip.material = gripMat;
+
+    // Stock connector
+    const stockConnector = MeshBuilder.CreateCylinder(
+      'stockConnector',
+      { height: 0.12, diameter: 0.04, tessellation: 12 },
+      scene
+    );
+    stockConnector.position = new Vector3(-0.25, 0.04, 0);
+    stockConnector.parent = weaponRoot;
+    stockConnector.material = weaponMetal;
+
+    // Compact stock
+    const stock = MeshBuilder.CreateBox(
+      'stock',
+      { width: 0.08, height: 0.18, depth: 0.06 },
+      scene
+    );
+    stock.position = new Vector3(-0.32, 0.04, 0);
+    stock.parent = weaponRoot;
+    stock.material = weaponBlack;
+
+    // Charging handle
+    const chargingHandle = MeshBuilder.CreateBox(
+      'chargingHandle',
+      { width: 0.04, height: 0.02, depth: 0.025 },
+      scene
+    );
+    chargingHandle.position = new Vector3(-0.05, 0.12, 0.065);
+    chargingHandle.parent = weaponRoot;
+    chargingHandle.material = weaponMetal;
+
+    // Side detail plates
+    const sidePlateL = MeshBuilder.CreateBox(
+      'sidePlateL',
+      { width: 0.2, height: 0.08, depth: 0.005 },
+      scene
+    );
+    sidePlateL.position = new Vector3(0, 0.05, 0.06);
+    sidePlateL.parent = weaponRoot;
+    sidePlateL.material = weaponMetal;
+
+    const sidePlateR = MeshBuilder.CreateBox(
+      'sidePlateR',
+      { width: 0.2, height: 0.08, depth: 0.005 },
+      scene
+    );
+    sidePlateR.position = new Vector3(0, 0.05, -0.06);
+    sidePlateR.parent = weaponRoot;
+    sidePlateR.material = weaponMetal;
+
+    // Hands positioned on weapon
+    const armMat = new StandardMaterial('armMat', scene);
+    armMat.diffuseColor = new Color3(0.72, 0.65, 0.58);
+
+    // Left hand on foregrip
+    const handLeft = MeshBuilder.CreateBox(
+      'handLeft',
+      { width: 0.08, height: 0.11, depth: 0.09 },
+      scene
+    );
+    handLeft.position = new Vector3(0.15, -0.05, -0.08);
+    handLeft.parent = weaponRoot;
+    handLeft.material = armMat;
+
+    // Right hand on grip
+    const handRight = MeshBuilder.CreateBox(
+      'handRight',
+      { width: 0.08, height: 0.11, depth: 0.09 },
+      scene
+    );
+    handRight.position = new Vector3(-0.16, -0.12, 0);
+    handRight.parent = weaponRoot;
+    handRight.material = armMat;
+
+    // Store weapon state for animations
+    const weaponState = {
+      isRecoiling: false,
+      originalPos: weaponRoot.position.clone(),
+      originalRotation: weaponRoot.rotation.clone(),
+    };
+
+    // Audio context for sound effects
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+    // Create laser sound effect
+    const playLaserSound = () => {
+      try {
+        const now = audioContext.currentTime;
+
+        // Oscillator for the laser tone
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+
+        // Laser sound: sweep from high to medium frequency
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+
+        osc.type = 'square';
+
+        // Volume envelope
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+        osc.start(now);
+        osc.stop(now + 0.1);
+      } catch (e) {
+        // Audio context might not be available
+      }
+    };
+
+    // Create explosion sound effect
+    const playExplosionSound = () => {
+      try {
+        const now = audioContext.currentTime;
+
+        // Explosion: white noise burst
+        const bufferSize = audioContext.sampleRate * 0.3;
+        const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+
+        const noiseNode = audioContext.createBufferSource();
+        noiseNode.buffer = noiseBuffer;
+
+        const gainEnv = audioContext.createGain();
+        noiseNode.connect(gainEnv);
+        gainEnv.connect(audioContext.destination);
+
+        // Explosion envelope
+        gainEnv.gain.setValueAtTime(0.3, now);
+        gainEnv.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+        noiseNode.start(now);
+        noiseNode.stop(now + 0.3);
+      } catch (e) {
+        // Audio context might not be available
+      }
+    };
+
     // Shooting mechanics
     const activeLasers: LinesMesh[] = [];
 
     const shoot = () => {
+      // Play laser sound
+      playLaserSound();
+
+      // Weapon recoil animation
+      if (!weaponState.isRecoiling) {
+        weaponState.isRecoiling = true;
+
+        // Recoil back
+        const recoilDistance = 0.1;
+        const recoilDuration = 100; // ms
+        const startTime = Date.now();
+        const startPos = weaponRoot.position.clone();
+
+        const recoilAnimInterval = setInterval(() => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / recoilDuration, 1);
+
+          // Push back then return
+          const recoilAmount = Math.sin(progress * Math.PI) * recoilDistance;
+          weaponRoot.position.z = startPos.z - recoilAmount;
+
+          if (progress >= 1) {
+            clearInterval(recoilAnimInterval);
+            weaponRoot.position = startPos;
+            weaponState.isRecoiling = false;
+          }
+        }, 16);
+      }
+
+      // Create muzzle flash at barrel tip
+      const muzzleFlash = MeshBuilder.CreateSphere(
+        'muzzleFlash',
+        { diameter: 0.3 },
+        scene
+      );
+
+      // Position at barrel tip relative to world
+      const barrelTipWorldPos = barrel.getAbsolutePosition();
+      const offset = Vector3.Forward().scale(0.5);
+      muzzleFlash.position = barrelTipWorldPos.add(offset);
+
+      const flashMat = new StandardMaterial('flashMat', scene);
+      flashMat.emissiveColor = new Color3(1, 0.8, 0.3);
+      flashMat.diffuseColor = new Color3(1, 0.5, 0);
+      muzzleFlash.material = flashMat;
+
+      // Fade and scale muzzle flash
+      let flashAlpha = 1;
+      let flashScale = 1;
+      const flashInterval = setInterval(() => {
+        flashAlpha -= 0.15;
+        flashScale += 0.08;
+
+        muzzleFlash.alpha = flashAlpha;
+        muzzleFlash.scaling = new Vector3(flashScale, flashScale, flashScale);
+
+        if (flashAlpha <= 0) {
+          clearInterval(flashInterval);
+          muzzleFlash.dispose();
+        }
+      }, 16);
+
       // Create ray from camera
       const ray = camera.getForwardRay(100);
 
@@ -102,6 +537,9 @@ const BabylonScene = () => {
         if (hit.pickedMesh && hit.pickedMesh.name.startsWith('enemy')) {
           // Hit an enemy!
           const enemy = hit.pickedMesh as Mesh;
+
+          // Play explosion sound
+          playExplosionSound();
 
           // Create explosion effect (scale up and fade)
           let scale = 1;
