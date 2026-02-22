@@ -39,14 +39,20 @@ const BabylonScene = () => {
     camera.attachControl(canvasRef.current, true);
 
     // Camera settings for FPS feel
-    camera.speed = 0.3;
-    camera.angularSensibility = 2000;
+    camera.speed = 6.5; // Much faster WASD movement
+    camera.angularSensibility = 800; // Lower value = higher sensitivity
     camera.minZ = 0.1;
+
+    // Disable inertia for tight, responsive controls
+    camera.inertia = 0;
 
     // Enable collision detection
     camera.checkCollisions = true;
-    camera.applyGravity = true;
+    camera.applyGravity = false; // Disable gravity following camera pitch
     camera.ellipsoid = new Vector3(1, 1, 1);
+
+    // Lock movement to horizontal plane only (don't move up/down when looking up/down)
+    camera.lockedTarget = null;
 
     // WASD + mouse controls
     camera.keysUp = [87]; // W
@@ -598,8 +604,8 @@ const BabylonScene = () => {
     skybox.material = skyboxMaterial;
     skybox.infiniteDistance = true;
 
-    // Enable gravity in the scene
-    scene.gravity = new Vector3(0, -0.5, 0);
+    // Enable gravity in the scene (reduced for faster movement)
+    scene.gravity = new Vector3(0, -0.05, 0);
     scene.collisionsEnabled = true;
 
     // Create a simple ground platform (space station floor)
@@ -700,12 +706,16 @@ const BabylonScene = () => {
 
     // Simple enemy floating animation
     let time = 0;
+    const playerHeight = 2; // Lock player at this height
     scene.registerBeforeRender(() => {
       time += 0.01;
       enemies.forEach((enemy, index) => {
         enemy.position.y += Math.sin(time + index) * 0.003;
         enemy.rotation.y += 0.01;
       });
+
+      // Lock camera Y position for horizontal-only movement
+      camera.position.y = playerHeight;
     });
 
     // Render loop
